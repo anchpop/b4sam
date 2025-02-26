@@ -1,0 +1,10 @@
+[package]
+name = "autosam"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+schemars = "1.0.0-alpha.17"
+serde = "1.0.218"
+tokio = { version = "1.43.0", features = ["full"] }
+tysm = "0.3.0"
