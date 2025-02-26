@@ -1,5 +1,6 @@
 use std::process::Command;
 
+use colored::*;
 use tysm::chat_completions::ChatClient;
 
 #[derive(serde::Deserialize, schemars::JsonSchema, Debug)]
@@ -82,24 +83,22 @@ async fn main() {
     println!("==================\n");
 
     for comment in review.comments {
-        // use the `colored` library that I already have, AI!
-        let color = match comment.comment_type {
-            CommentType::Nitpick => "\x1b[38;5;208m",          // Orange
-            CommentType::LeftoverDebug => "\x1b[38;5;9m",      // Bright Red
-            CommentType::UnnecessaryComment => "\x1b[38;5;8m", // Gray
-            CommentType::StyleIssue => "\x1b[38;5;226m",       // Yellow
-            CommentType::Question => "\x1b[38;5;39m",          // Blue
-            CommentType::Issue => "\x1b[38;5;196m",            // Red
-            CommentType::Suggestion => "\x1b[38;5;34m",        // Green
-            CommentType::Idea => "\x1b[38;5;141m",             // Purple
+        let colored_type = match comment.comment_type {
+            CommentType::Nitpick => comment.comment_type.to_string().truecolor(255, 140, 0),         // Orange
+            CommentType::LeftoverDebug => comment.comment_type.to_string().bright_red(),             // Bright Red
+            CommentType::UnnecessaryComment => comment.comment_type.to_string().dimmed(),            // Gray
+            CommentType::StyleIssue => comment.comment_type.to_string().yellow(),                    // Yellow
+            CommentType::Question => comment.comment_type.to_string().bright_blue(),                 // Blue
+            CommentType::Issue => comment.comment_type.to_string().red(),                            // Red
+            CommentType::Suggestion => comment.comment_type.to_string().green(),                     // Green
+            CommentType::Idea => comment.comment_type.to_string().purple(),                          // Purple
         };
-        let reset = "\x1b[0m";
 
         println!(
-            "{}[{}]{} in {}",
-            color, comment.comment_type, reset, comment.r#in
+            "[{}] in {}",
+            colored_type, comment.r#in
         );
         println!("Line: {}", comment.line);
-        println!("{}{}{}\n", color, comment.comment, reset);
+        println!("{}\n", comment.comment.color(colored_type.fgcolor().unwrap()));
     }
 }
