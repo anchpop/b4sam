@@ -43,19 +43,25 @@ struct Review {
 }
 
 fn get_changes_against_master() -> String {
-    // make this work with main or master, AI!
-    // Get the merge base (common ancestor) between origin/main and HEAD
-    let merge_base_output = Command::new("git")
+    // Try with origin/main first
+    let mut merge_base_output = Command::new("git")
         .args(["merge-base", "origin/main", "HEAD"])
-        .output()
-        .expect("Failed to run git merge-base");
-
+        .output();
+    
+    // If that fails, try with origin/master
+    if merge_base_output.is_err() || merge_base_output.as_ref().unwrap().status.code() != Some(0) {
+        merge_base_output = Command::new("git")
+            .args(["merge-base", "origin/master", "HEAD"])
+            .output();
+    }
+    
+    let merge_base_output = merge_base_output.expect("Failed to run git merge-base");
     let merge_base = String::from_utf8_lossy(&merge_base_output.stdout)
         .trim()
         .to_string();
 
     if merge_base.is_empty() {
-        return String::from("Failed to find merge base with origin/main");
+        return String::from("Failed to find merge base with origin/main or origin/master");
     }
 
     // Get the diff between the merge base and the current HEAD
