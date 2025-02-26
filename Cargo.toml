@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+colored = "3.0.0"
 schemars = "1.0.0-alpha.17"
 serde = "1.0.218"
 tokio = { version = "1.43.0", features = ["full"] }
