@@ -43,6 +43,7 @@ struct Review {
 }
 
 fn get_changes_against_master() -> String {
+    
     // Get the merge base (common ancestor) between origin/main and HEAD
     let merge_base_output = Command::new("git")
         .args(["merge-base", "origin/main", "HEAD"])
