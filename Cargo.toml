@@ -1,7 +1,12 @@
 [package]
-name = "autosam"
+name = "b4sam"
 version = "0.1.0"
 edition = "2021"
+
+description = "A tool to review code with AI"
+license = "MIT"
+repository = "https://github.com/anchpop/b4sam"
+authors = ["Andre Popovitch <andre@popovit.ch>"]
 
 [dependencies]
 schemars = "1.0.0-alpha.17"
