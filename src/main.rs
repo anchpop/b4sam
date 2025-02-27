@@ -47,14 +47,14 @@ fn get_changes_against_master() -> String {
     let mut merge_base_output = Command::new("git")
         .args(["merge-base", "origin/main", "HEAD"])
         .output();
-    
+
     // If that fails, try with origin/master
     if merge_base_output.is_err() || merge_base_output.as_ref().unwrap().status.code() != Some(0) {
         merge_base_output = Command::new("git")
             .args(["merge-base", "origin/master", "HEAD"])
             .output();
     }
-    
+
     let merge_base_output = merge_base_output.expect("Failed to run git merge-base");
     let merge_base = String::from_utf8_lossy(&merge_base_output.stdout)
         .trim()
@@ -100,11 +100,13 @@ async fn main() {
         };
         let reset = "\x1b[0m";
 
+        let comment_type = format!("{}", comment.comment_type);
+        println!("{}[{}]{} in: {}", color, comment_type, reset, comment.r#in);
         println!(
-            "{}[{}]{} in {}",
-            color, comment.comment_type, reset, comment.r#in
+            "{}line: {}",
+            " ".repeat(comment_type.len() + 1),
+            comment.line.trim()
         );
-        println!("Line: {}", comment.line);
         println!("{}{}{}\n", color, comment.comment, reset);
     }
 }
