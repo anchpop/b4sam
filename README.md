@@ -1,6 +1,6 @@
 ## b4sam
 
-This is a simple tool you can run to try to catch dumb mistakes in your pull requests before your coworkers do. It just diffs your changes against master, puts the diff into gpt-03-min, then prints the output.
+This is a simple tool you can run to try to catch dumb mistakes in your pull requests before your coworkers do. It just diffs your changes against master, puts the diff into gpt-o3-min, then prints the output.
 
 ```
 ❯ b4sam
@@ -26,7 +26,7 @@ Switching to block_on for async context gathering is acceptable in a sync contex
 
 Why the name? I have a coworker named sam who is always catching my dumb mistakes. Now I run this b4 showing it to him to avoid the embarassment.
 
-Obviously this is only capable of catching surface level issuse (typos, leftover debug statements, etc), but I still find it very useful
+Obviously this is only capable of catching surface level issuse (typos, leftover debug statements, etc), and not everything it detects is a real issue, but I still find it very useful.
 
 ## Installation
 
