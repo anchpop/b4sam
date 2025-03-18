@@ -83,7 +83,23 @@ async fn main() {
         .chat_with_system_prompt(&changes, system_prompt)
         .await
         .unwrap();
-
+    
+    // Display usage information
+    let usage = client.usage.read().unwrap();
+    
+    // Cost calculation (USD per million tokens)
+    const INPUT_COST_PER_MILLION: f64 = 1.10;
+    const OUTPUT_COST_PER_MILLION: f64 = 4.40;
+    
+    let input_cost = (usage.prompt_tokens as f64 / 1_000_000.0) * INPUT_COST_PER_MILLION;
+    let output_cost = (usage.completion_tokens as f64 / 1_000_000.0) * OUTPUT_COST_PER_MILLION;
+    let total_cost = input_cost + output_cost;
+    
+    println!("📊 Token Usage & Cost Summary");
+    println!("-----------------------------");
+    println!("Total:  {:5} tokens (${:.4})", usage.total_tokens, total_cost);
+    println!();
+    
     println!("Code Review Results:");
     println!("==================\n");
 
