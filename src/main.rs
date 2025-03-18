@@ -66,7 +66,11 @@ fn get_changes_against_master() -> String {
 
     // Get the diff between the merge base and the current HEAD
     let diff_output = Command::new("git")
-        .args(["diff", &merge_base])
+        .args([
+            "diff",
+            "-U20", /* give the model 20 lines of context for the change */
+            &merge_base,
+        ])
         .output()
         .expect("Failed to run git diff");
 
