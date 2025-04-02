@@ -9,7 +9,8 @@ repository = "https://github.com/anchpop/b4sam"
 authors = ["Andre Popovitch <andre@popovit.ch>"]
 
 [dependencies]
+anyhow = "1.0.97"
 schemars = "1.0.0-alpha.17"
 serde = "1.0.218"
 tokio = { version = "1.43.0", features = ["full"] }
-tysm = "0.3.0"
+tysm = "0.6.0"

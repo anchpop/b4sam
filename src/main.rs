@@ -78,33 +78,22 @@ fn get_changes_against_master() -> String {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     let system_prompt = r#"You are a helpful assistant that reviews code. The types of responses you can leave are "Nitpick", "LeftoverDebug", "UnnecessaryComment", "StyleIssue", "Question", "Issue", "Suggestion", "Idea". Also, redisplay the line of code that you are commenting on and tell the user where that line is in the file."#;
     let client = ChatClient::from_env("o3-mini").unwrap();
 
     let changes = get_changes_against_master();
     let review: Review = client
-        .chat_with_system_prompt(&changes, system_prompt)
-        .await
-        .unwrap();
+        .chat_with_system_prompt(system_prompt, &changes)
+        .await?;
 
     // Display usage information
     let usage = client.usage.read().unwrap();
-
-    // Cost calculation (USD per million tokens)
-    const INPUT_COST_PER_MILLION: f64 = 1.10;
-    const OUTPUT_COST_PER_MILLION: f64 = 4.40;
-
-    let input_cost = (usage.prompt_tokens as f64 / 1_000_000.0) * INPUT_COST_PER_MILLION;
-    let output_cost = (usage.completion_tokens as f64 / 1_000_000.0) * OUTPUT_COST_PER_MILLION;
-    let total_cost = input_cost + output_cost;
+    let cost = client.cost().unwrap();
 
     println!("📊 Token Usage & Cost Summary");
     println!("-----------------------------");
-    println!(
-        "Total:  {:5} tokens (${:.4})",
-        usage.total_tokens, total_cost
-    );
+    println!("Total:  {:5} tokens (${:.4})", usage.total_tokens, cost);
     println!();
 
     println!("Code Review Results:");
@@ -132,4 +121,6 @@ async fn main() {
         );
         println!("{}{}{}\n", color, comment.comment, reset);
     }
+
+    Ok(())
 }
