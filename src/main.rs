@@ -1,6 +1,7 @@
 use std::process::Command;
 
 use anyhow::Context;
+use clap::{Parser, Subcommand};
 use tysm::chat_completions::ChatClient;
 
 #[derive(serde::Deserialize, schemars::JsonSchema, Debug)]
@@ -78,20 +79,75 @@ fn get_changes_against_default_branch() -> anyhow::Result<String> {
     Ok(String::from_utf8_lossy(&diff_output.stdout).to_string())
 }
 
+/// CLI tool for AI-powered code reviews
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+
+    /// Show verbose output
+    #[arg(short, long)]
+    verbose: bool,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Review code changes against the default branch
+    Review {
+        /// Custom system prompt for the AI
+        #[arg(short, long)]
+        prompt: Option<String>,
+    },
+    /// Show the diff that would be reviewed
+    ShowDiff,
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let system_prompt = r#"You are a helpful assistant that reviews code. The types of responses you can leave are "Nitpick", "LeftoverDebug", "UnnecessaryComment", "StyleIssue", "Question", "Issue", "Suggestion", "Idea". Also, redisplay the line of code that you are commenting on and tell the user where that line is in the file."#;
+    let cli = Cli::parse();
+
+    match cli.command {
+        Some(Commands::Review { prompt }) => {
+            review_code(prompt, cli.verbose).await?;
+        }
+        Some(Commands::ShowDiff) => {
+            let changes = get_changes_against_default_branch()?;
+            println!("{}", changes);
+        }
+        None => {
+            // Default to review if no command is specified
+            review_code(None, cli.verbose).await?;
+        }
+    }
+
+    Ok(())
+}
+
+async fn review_code(custom_prompt: Option<String>, verbose: bool) -> anyhow::Result<()> {
+    let default_prompt = r#"You are a helpful assistant that reviews code. The types of responses you can leave are "Nitpick", "LeftoverDebug", "UnnecessaryComment", "StyleIssue", "Question", "Issue", "Suggestion", "Idea". Also, redisplay the line of code that you are commenting on and tell the user where that line is in the file."#;
+
+    let system_prompt = custom_prompt.unwrap_or_else(|| default_prompt.to_string());
     let client = ChatClient::from_env("o3")?;
 
+    if verbose {
+        eprintln!("Fetching changes against default branch...");
+    }
+
     let changes = get_changes_against_default_branch()?;
+
+    if verbose {
+        eprintln!("Sending changes to AI for review...");
+    }
+
     let review: Review = client
-        .chat_with_system_prompt(system_prompt, &changes)
+        .chat_with_system_prompt(&system_prompt, &changes)
         .await?;
 
     // Display usage information
     let cost = client.cost().unwrap_or(0.0);
 
-    println!("Code Review Results [${:.4}]", cost);
+    println!("Code Review Results [${:.2}]", cost);
     println!("===================\n");
 
     for comment in review.comments {
