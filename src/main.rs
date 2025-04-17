@@ -147,7 +147,7 @@ async fn review_code(custom_prompt: Option<String>, verbose: bool) -> anyhow::Re
     // Display usage information
     let cost = client.cost().unwrap_or(0.0);
 
-    println!("Code Review Results [${:.4}]", cost);
+    println!("Code Review Results [${:.2}]", cost);
     println!("===================\n");
 
     for comment in review.comments {

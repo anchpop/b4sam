@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  CARGO_TERM_COLOR: always
+  OPENAI_API_KEY: sk-1234567890
+
+jobs:
+  build-clippy:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest]
+        style: [default]
+        rust:
+          - "1.85.0"
+        include:
+          - style: no_default
+            flags: "--no-default-features"
+          - style: default
+            flags: ""
+        exclude:
+          - platform: windows-latest
+            style: default
+          - platform: macos-latest
+            style: default
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.style }}v1 # increment this to bust the cache if needed
+
+      - name: Rustfmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+      - name: Clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --workspace ${{ matrix.flags }} -- -D warnings
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest]
+        style: [default]
+        rust:
+          - "1.85.0"
+        include:
+          - style: no_default
+            flags: "--no-default-features"
+          - style: default
+            flags: ""
+        exclude:
+          - platform: windows-latest
+            style: default
+          - platform: macos-latest
+            style: default
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.style }}v1 # increment this to bust the cache if needed
+
+      - uses: taiki-e/install-action@nextest
+
+      - name: Tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: nextest
+          args: run --all ${{ matrix.flags }}
