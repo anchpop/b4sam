@@ -10,8 +10,7 @@ authors = ["Andre Popovitch <andre@popovit.ch>"]
 
 [dependencies]
 anyhow = "1.0.97"
-clap = "4.5.36"
-clap_derive = "4.5.32"
+clap = { version = "4.5.36", features = ["derive"] }
 schemars = "1.0.0-alpha.17"
 serde = "1.0.218"
 tokio = { version = "1.43.0", features = ["full"] }
