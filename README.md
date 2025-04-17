@@ -1,6 +1,6 @@
 ## b4sam
 
-This is a simple tool you can run to try to catch dumb mistakes in your pull requests before your coworkers do. It just diffs your changes against master, puts the diff into gpt-o3-min, then prints the output.
+This is a simple tool you can run to try to catch dumb mistakes in your pull requests before your coworkers do. It just diffs your changes against master, puts the diff into gpt-o3, then prints the output.
 
 ```
 ❯ b4sam

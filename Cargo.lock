@@ -37,7 +37,7 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
 name = "b4sam"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "schemars",
@@ -1295,9 +1295,9 @@ dependencies = [
 
 [[package]]
 name = "tysm"
-version = "0.6.0"
+version = "0.7.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dc64b44f184813129c201908542c0ab3154173f67edd5a2396a8814bc0c3775"
+checksum = "1c922476a04ec535b65d24bc72b03f408fb271b44020a1a7e093b1fabe9503dd"
 dependencies = [
  "dotenv",
  "itertools",
