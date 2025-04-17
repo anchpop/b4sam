@@ -106,7 +106,7 @@ enum Commands {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    
+
     match cli.command {
         Some(Commands::Review { prompt }) => {
             review_code(prompt, cli.verbose).await?;
@@ -126,20 +126,20 @@ async fn main() -> anyhow::Result<()> {
 
 async fn review_code(custom_prompt: Option<String>, verbose: bool) -> anyhow::Result<()> {
     let default_prompt = r#"You are a helpful assistant that reviews code. The types of responses you can leave are "Nitpick", "LeftoverDebug", "UnnecessaryComment", "StyleIssue", "Question", "Issue", "Suggestion", "Idea". Also, redisplay the line of code that you are commenting on and tell the user where that line is in the file."#;
-    
+
     let system_prompt = custom_prompt.unwrap_or_else(|| default_prompt.to_string());
     let client = ChatClient::from_env("o3")?;
 
     if verbose {
-        println!("Fetching changes against default branch...");
+        eprintln!("Fetching changes against default branch...");
     }
-    
+
     let changes = get_changes_against_default_branch()?;
-    
+
     if verbose {
-        println!("Sending changes to AI for review...");
+        eprintln!("Sending changes to AI for review...");
     }
-    
+
     let review: Review = client
         .chat_with_system_prompt(&system_prompt, &changes)
         .await?;
