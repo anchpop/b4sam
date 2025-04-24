@@ -15,21 +15,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest]
         style: [default]
         rust:
           - "1.85.0"
         include:
-          - style: no_default
-            flags: "--no-default-features"
           - style: default
             flags: ""
-        exclude:
-          - platform: windows-latest
-            style: default
-          - platform: macos-latest
-            style: default
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Setup Rust toolchain
@@ -59,22 +51,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest]
         style: [default]
         rust:
           - "1.85.0"
         include:
-          - style: no_default
-            flags: "--no-default-features"
           - style: default
             flags: ""
-        exclude:
-          - platform: windows-latest
-            style: default
-          - platform: macos-latest
-            style: default
 
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
