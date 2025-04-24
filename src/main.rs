@@ -46,7 +46,7 @@ struct Review {
 
 fn get_changes(against: Option<&str>) -> anyhow::Result<String> {
     let base = if let Some(commit) = against {
-        commit.to_string()
+        commit
     } else {
         // Try with origin/main first
         let mut merge_base_output = Command::new("git")
@@ -54,9 +54,7 @@ fn get_changes(against: Option<&str>) -> anyhow::Result<String> {
             .output();
 
         // If that fails, try with origin/master
-        if merge_base_output.is_err()
-            || merge_base_output.as_ref().unwrap().status.code() != Some(0)
-        {
+        if !matches!(merge_base_output, Ok(ref o) if o.status.success()) {
             merge_base_output = Command::new("git")
                 .args(["merge-base", "origin/master", "HEAD"])
                 .output();
@@ -78,7 +76,7 @@ fn get_changes(against: Option<&str>) -> anyhow::Result<String> {
     let diff_output = Command::new("git")
         .args([
             "diff", "-U30", /* give the model 30 lines of context for the change */
-            &base,
+            &base, "HEAD",
         ])
         .output()
         .context("Failed to run `git diff`")?;
@@ -100,7 +98,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Review code changes against the default branch
+    /// Review code changes
     Review {
         /// Custom system prompt for the AI
         #[arg(short, long)]
@@ -144,6 +142,16 @@ async fn review_code(
     verbose: bool,
     against: Option<&str>,
 ) -> anyhow::Result<()> {
+    // Validate the against revision if provided
+    if let Some(rev) = against {
+        let validate = Command::new("git")
+            .args(["rev-parse", "--verify", rev])
+            .output();
+        
+        if !matches!(validate, Ok(ref o) if o.status.success()) {
+            anyhow::bail!("Invalid git revision: {}", rev);
+        }
+    }
     let default_prompt = r#"You are a helpful assistant that reviews code. The types of responses you can leave are "Nitpick", "LeftoverDebug", "UnnecessaryComment", "StyleIssue", "Question", "Issue", "Suggestion", "Idea". Also, redisplay the line of code that you are commenting on and tell the user where that line is in the file. Keep in mind that you will not see the entire file, only a diff that shows the sections that changed. This means that you may see variables and functions being used without seeing where they are defined."#;
 
     let system_prompt = custom_prompt.unwrap_or_else(|| default_prompt.to_string());
