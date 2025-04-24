@@ -44,34 +44,40 @@ struct Review {
     comments: Vec<Comment>,
 }
 
-fn get_changes_against_default_branch() -> anyhow::Result<String> {
-    // Try with origin/main first
-    let mut merge_base_output = Command::new("git")
-        .args(["merge-base", "origin/main", "HEAD"])
-        .output();
-
-    // If that fails, try with origin/master
-    if merge_base_output.is_err() || merge_base_output.as_ref().unwrap().status.code() != Some(0) {
-        merge_base_output = Command::new("git")
-            .args(["merge-base", "origin/master", "HEAD"])
+fn get_changes(against: Option<&str>) -> anyhow::Result<String> {
+    let base = if let Some(commit) = against {
+        commit.to_string()
+    } else {
+        // Try with origin/main first
+        let mut merge_base_output = Command::new("git")
+            .args(["merge-base", "origin/main", "HEAD"])
             .output();
-    }
 
-    let merge_base_output = merge_base_output.context("Failed to run `git merge-base`")?;
-    let merge_base = String::from_utf8_lossy(&merge_base_output.stdout)
-        .trim()
-        .to_string();
+        // If that fails, try with origin/master
+        if merge_base_output.is_err() || merge_base_output.as_ref().unwrap().status.code() != Some(0) {
+            merge_base_output = Command::new("git")
+                .args(["merge-base", "origin/master", "HEAD"])
+                .output();
+        }
 
-    if merge_base.is_empty() {
-        anyhow::bail!("Failed to find merge base with origin/main or origin/master");
-    }
+        let merge_base_output = merge_base_output.context("Failed to run `git merge-base`")?;
+        let merge_base = String::from_utf8_lossy(&merge_base_output.stdout)
+            .trim()
+            .to_string();
 
-    // Get the diff between the merge base and the current HEAD
+        if merge_base.is_empty() {
+            anyhow::bail!("Failed to find merge base with origin/main or origin/master");
+        }
+        
+        merge_base
+    };
+
+    // Get the diff between the base and the current HEAD
     let diff_output = Command::new("git")
         .args([
             "diff",
             "-U30", /* give the model 30 lines of context for the change */
-            &merge_base,
+            &base,
         ])
         .output()
         .context("Failed to run `git diff`")?;
@@ -89,6 +95,10 @@ struct Cli {
     /// Show verbose output
     #[arg(short, long)]
     verbose: bool,
+    
+    /// Specify a git commit to diff against (instead of using merge-base)
+    #[arg(long)]
+    against: Option<String>,
 }
 
 #[derive(Subcommand)]
@@ -109,22 +119,22 @@ async fn main() -> anyhow::Result<()> {
 
     match cli.command {
         Some(Commands::Review { prompt }) => {
-            review_code(prompt, cli.verbose).await?;
+            review_code(prompt, cli.verbose, cli.against.as_deref()).await?;
         }
         Some(Commands::ShowDiff) => {
-            let changes = get_changes_against_default_branch()?;
+            let changes = get_changes(cli.against.as_deref())?;
             println!("{}", changes);
         }
         None => {
             // Default to review if no command is specified
-            review_code(None, cli.verbose).await?;
+            review_code(None, cli.verbose, cli.against.as_deref()).await?;
         }
     }
 
     Ok(())
 }
 
-async fn review_code(custom_prompt: Option<String>, verbose: bool) -> anyhow::Result<()> {
+async fn review_code(custom_prompt: Option<String>, verbose: bool, against: Option<&str>) -> anyhow::Result<()> {
     let default_prompt = r#"You are a helpful assistant that reviews code. The types of responses you can leave are "Nitpick", "LeftoverDebug", "UnnecessaryComment", "StyleIssue", "Question", "Issue", "Suggestion", "Idea". Also, redisplay the line of code that you are commenting on and tell the user where that line is in the file."#;
 
     let system_prompt = custom_prompt.unwrap_or_else(|| default_prompt.to_string());
@@ -134,7 +144,7 @@ async fn review_code(custom_prompt: Option<String>, verbose: bool) -> anyhow::Re
         eprintln!("Fetching changes against default branch...");
     }
 
-    let changes = get_changes_against_default_branch()?;
+    let changes = get_changes(against)?;
 
     if verbose {
         eprintln!("Sending changes to AI for review...");
