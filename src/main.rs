@@ -45,6 +45,17 @@ struct Review {
 }
 
 fn get_changes(against: Option<&str>) -> anyhow::Result<String> {
+    // Validate the against revision if provided
+    if let Some(rev) = against {
+        let validate = Command::new("git")
+            .args(["rev-parse", "--verify", rev])
+            .output();
+
+        if !matches!(validate, Ok(ref o) if o.status.success()) {
+            anyhow::bail!("Invalid git revision: {}", rev);
+        }
+    }
+
     let base = if let Some(commit) = against {
         commit.to_string()
     } else {
@@ -150,16 +161,6 @@ async fn review_code(
     verbose: bool,
     against: Option<&str>,
 ) -> anyhow::Result<()> {
-    // Validate the against revision if provided
-    if let Some(rev) = against {
-        let validate = Command::new("git")
-            .args(["rev-parse", "--verify", rev])
-            .output();
-
-        if !matches!(validate, Ok(ref o) if o.status.success()) {
-            anyhow::bail!("Invalid git revision: {}", rev);
-        }
-    }
     let default_prompt = r#"You are a helpful assistant that reviews code. The types of responses you can leave are "Nitpick", "LeftoverDebug", "UnnecessaryComment", "StyleIssue", "Question", "Issue", "Suggestion", "Idea". Also, redisplay the line of code that you are commenting on and tell the user where that line is in the file. Keep in mind that you will not see the entire file, only a diff that shows the sections that changed. This means that you may see variables and functions being used without seeing where they are defined. You are being invoked on code that compiles and passes all tests (you are simply a last pass sanity check).
 
 Nitpick: Small style issues, small issues in performance (e.g. cloning a vector when passing by reference would work).
