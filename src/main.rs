@@ -54,7 +54,9 @@ fn get_changes(against: Option<&str>) -> anyhow::Result<String> {
             .output();
 
         // If that fails, try with origin/master
-        if merge_base_output.is_err() || merge_base_output.as_ref().unwrap().status.code() != Some(0) {
+        if merge_base_output.is_err()
+            || merge_base_output.as_ref().unwrap().status.code() != Some(0)
+        {
             merge_base_output = Command::new("git")
                 .args(["merge-base", "origin/master", "HEAD"])
                 .output();
@@ -68,15 +70,14 @@ fn get_changes(against: Option<&str>) -> anyhow::Result<String> {
         if merge_base.is_empty() {
             anyhow::bail!("Failed to find merge base with origin/main or origin/master");
         }
-        
+
         merge_base
     };
 
     // Get the diff between the base and the current HEAD
     let diff_output = Command::new("git")
         .args([
-            "diff",
-            "-U30", /* give the model 30 lines of context for the change */
+            "diff", "-U30", /* give the model 30 lines of context for the change */
             &base,
         ])
         .output()
@@ -95,10 +96,6 @@ struct Cli {
     /// Show verbose output
     #[arg(short, long)]
     verbose: bool,
-    
-    /// Specify a git commit to diff against (instead of using merge-base)
-    #[arg(long)]
-    against: Option<String>,
 }
 
 #[derive(Subcommand)]
@@ -108,9 +105,17 @@ enum Commands {
         /// Custom system prompt for the AI
         #[arg(short, long)]
         prompt: Option<String>,
+
+        /// Specify a git commit to diff against (instead of using merge-base)
+        #[arg(long)]
+        against: Option<String>,
     },
     /// Show the diff that would be reviewed
-    ShowDiff,
+    ShowDiff {
+        /// Specify a git commit to diff against (instead of using merge-base)
+        #[arg(long)]
+        against: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -118,24 +123,28 @@ async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Some(Commands::Review { prompt }) => {
-            review_code(prompt, cli.verbose, cli.against.as_deref()).await?;
+        Some(Commands::Review { prompt, against }) => {
+            review_code(prompt, cli.verbose, against.as_deref()).await?;
         }
-        Some(Commands::ShowDiff) => {
-            let changes = get_changes(cli.against.as_deref())?;
+        Some(Commands::ShowDiff { against }) => {
+            let changes = get_changes(against.as_deref())?;
             println!("{}", changes);
         }
         None => {
             // Default to review if no command is specified
-            review_code(None, cli.verbose, cli.against.as_deref()).await?;
+            review_code(None, cli.verbose, None).await?;
         }
     }
 
     Ok(())
 }
 
-async fn review_code(custom_prompt: Option<String>, verbose: bool, against: Option<&str>) -> anyhow::Result<()> {
-    let default_prompt = r#"You are a helpful assistant that reviews code. The types of responses you can leave are "Nitpick", "LeftoverDebug", "UnnecessaryComment", "StyleIssue", "Question", "Issue", "Suggestion", "Idea". Also, redisplay the line of code that you are commenting on and tell the user where that line is in the file."#;
+async fn review_code(
+    custom_prompt: Option<String>,
+    verbose: bool,
+    against: Option<&str>,
+) -> anyhow::Result<()> {
+    let default_prompt = r#"You are a helpful assistant that reviews code. The types of responses you can leave are "Nitpick", "LeftoverDebug", "UnnecessaryComment", "StyleIssue", "Question", "Issue", "Suggestion", "Idea". Also, redisplay the line of code that you are commenting on and tell the user where that line is in the file. Keep in mind that you will not see the entire file, only a diff that shows the sections that changed. This means that you may see variables and functions being used without seeing where they are defined."#;
 
     let system_prompt = custom_prompt.unwrap_or_else(|| default_prompt.to_string());
     let client = ChatClient::from_env("o3")?;
