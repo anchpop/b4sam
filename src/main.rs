@@ -172,8 +172,8 @@ Issue: Issues with the code that are not style related.
 Suggestion: Suggestions for improvements.
 Idea: Ideas for improvements.
 
-Remember, the code you are reviewing has already been compiled without errors and passed all tests. There is no possibility that the code would not compile, and there are no errors in the code that would prevent it from compiling.
-    "#;
+Remember, the code you are reviewing has already been compiled without errors and passed all tests. There is no possibility that the code would not compile, and there are no errors in the code that would prevent it from compiling."#;
+
     let system_prompt = custom_prompt.unwrap_or_else(|| default_prompt.to_string());
     let client = ChatClient::from_env("o3")?;
 
