@@ -83,11 +83,11 @@ fn get_changes(against: Option<&str>) -> anyhow::Result<String> {
         merge_base
     };
 
-    // Get the diff between the base and the current HEAD
+    // Get the diff between the base and the current HEAD, excluding Cargo.lock and large JSON/CSV files
     let diff_output = Command::new("git")
         .args([
             "diff", "-U30", /* give the model 30 lines of context for the change */
-            &base, "HEAD",
+            &base, "HEAD", "--", ".", ":(exclude)Cargo.lock", ":(exclude)*.json", ":(exclude)*.csv",
         ])
         .output()
         .context("Failed to run `git diff`")?;
